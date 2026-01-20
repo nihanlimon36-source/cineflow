@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineFlow | Premium Movie Download Portal</title>
+    
+    <!-- SEO & Social Media Metadata -->
+    <meta name="description" content="Download the latest movies in 4K and 1080p. High-speed direct links, latest releases, and detailed movie info.">
+    <meta property="og:title" content="CineFlow - High Quality Movie Portal">
+    <meta property="og:description" content="Get the latest blockbusters for free. Direct high-speed downloads.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#E50914">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        /* Netflix-style custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #121212; }
+        ::-webkit-scrollbar-thumb { background: #E50914; border-radius: 4px; }
+        
+        .movie-card-overlay {
+            background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);
+        }
+        .hero-gradient {
+            background: linear-gradient(0deg, #000000 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.8) 100%);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+
+        /* Smooth hover state for Netflix-style buttons */
+        .btn-netflix {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-netflix:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+
+    <script type="module">
+        import React, { useState, useMemo, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+
+        // --- MOCK DATA ---
+        const INITIAL_MOVIES = [
+            {
+                id: '1',
+                title: 'Interstellar',
+                year: 2014,
+                quality: '4K Ultra HD',
+                size: '12.4 GB',
+                genre: ['Sci-Fi', 'Drama'],
+                rating: 8.7,
+                synopsis: 'When Earth becomes uninhabitable in the future, a farmer and ex-NASA pilot, Joseph Cooper, is tasked to pilot a spacecraft, along with a team of researchers, to find a new planet for humans.',
+                posterUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400',
+                backdropUrl: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1200',
+                downloadUrl: '#'
+            },
+            {
+                id: '2',
+                title: 'The Dark Knight',
+                year: 2008,
+                quality: '1080p BluRay',
+                size: '2.8 GB',
+                genre: ['Action', 'Crime'],
+                rating: 9.0,
+                synopsis: 'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.',
+                posterUrl: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400',
+                backdropUrl: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=1200',
+                downloadUrl: '#'
+            },
+            {
+                id: '3',
+                title: 'Blade Runner 2049',
+                year: 2017,
+                quality: '4K HDR',
+                size: '15.2 GB',
+                genre: ['Sci-Fi', 'Mystery'],
+                rating: 8.0,
+                synopsis: 'Young Blade Runner K\'s discovery of a long-buried secret leads him to track down former Blade Runner Rick Deckard, who\'s been missing for thirty years.',
+                posterUrl: 'https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=400',
+                backdropUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1200',
+                downloadUrl: '#'
+            }
+        ];
+
+        // --- COMPONENTS ---
+
+        const AdSlot = ({ label, className = '' }) => (
+            <a href="#" target="_blank" rel="noopener noreferrer" className={`bg-[#1a1a1a] border border-dashed border-gray-700 flex flex-col items-center justify-center p-4 min-h-[100px] text-gray-500 rounded-md overflow-hidden hover:bg-[#222] transition-colors cursor-pointer group ${className}`}>
+                <span className="text-[10px] font-bold uppercase tracking-widest mb-1 opacity-50 group-hover:text-[#E50914] group-hover:opacity-100 transition-all">Sponsor Advertisement</span>
+                <p className="text-xs font-medium italic">{label}</p>
+                <div className="mt-2 w-full h-1 bg-[#E50914]/10 rounded overflow-hidden">
+                    <div className="w-1/3 h-full bg-[#E50914] animate-[loading_2s_infinite_linear]"></div>
+                </div>
+            </a>
+        );
+
+        const Navbar = ({ onSearch, onGoHome, onGoUpload, genres, activeGenre, onSelectGenre }) => (
+            <nav className="sticky top-0 z-50 bg-black/95 border-b border-white/10 px-4 md:px-12 py-3 backdrop-blur-md">
+                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                    <div onClick={onGoHome} className="flex items-center gap-2 cursor-pointer group">
+                        <div className="bg-[#E50914] p-1.5 rounded-md group-hover:scale-110 transition-transform"><i className="fa-solid fa-play text-white text-lg"></i></div>
+                        <span className="text-white text-xl font-black uppercase tracking-tighter">CineFlow</span>
+                    </div>
+                    <div className="hidden lg:flex items-center gap-6 flex-1 ml-8">
+                        <button onClick={onGoHome} className={`text-sm font-bold transition-colors ${activeGenre === 'All' ? 'text-white' : 'text-gray-400 hover:text-white'}`}>Home</button>
+                        <div className="relative group">
+                            <button className="text-sm font-bold text-gray-400 hover:text-white flex items-center gap-1 uppercase tracking-tighter">Browse <i className="fa-solid fa-chevron-down text-[10px]"></i></button>
+                            <div className="absolute top-full left-0 mt-2 w-48 bg-[#121212] border border-white/10 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 pointer-events-none group-hover:pointer-events-auto transition-all py-2">
+                                {['Action', 'Sci-Fi', 'Horror', 'Drama'].map(g => (
+                                    <button key={g} className="w-full text-left px-4 py-2 text-sm hover:bg-[#E50914] hover:text-white transition-colors text-gray-400">{g}</button>
+                                ))}
+                            </div>
+                        </div>
+                        <button onClick={onGoUpload} className="text-xs font-bold bg-[#E50914] hover:bg-white hover:text-black text-white px-5 py-2 rounded-full transition-all flex items-center gap-2"><i className="fa-solid fa-cloud-arrow-up"></i> UPLOAD</button>
+                    </div>
+                    <div className="flex-1 max-w-sm relative">
+                        <input type="text" placeholder="Search for movies..." onChange={(e) => onSearch(e.target.value)} className="w-full bg-[#1a1a1a] border border-white/10 text-white text-sm rounded-full px-10 py-2.5 focus:border-[#E50914] focus:ring-1 focus:ring-[#E50914] outline-none transition-all" />
+                        <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                    </div>
+                </div>
+            </nav>
+        );
+
+        const Hero = ({ movie, onViewDetails }) => (
+            <div className="relative h-[65vh] w-full overflow-hidden">
+                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${movie.backdropUrl})` }}>
+                    <div className="absolute inset-0 hero-gradient"></div>
+                </div>
+                <div className="relative h-full flex flex-col justify-end px-4 md:px-12 pb-20 max-w-4xl animate-fadeIn">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="bg-[#E50914] text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest">Featured</span>
+                        <span className="text-white font-bold text-sm">★ {movie.rating}</span>
+                    </div>
+                    <h1 className="text-5xl md:text-8xl font-black text-white mb-6 leading-none tracking-tighter drop-shadow-2xl">{movie.title}</h1>
+                    <p className="text-gray-200 text-sm md:text-xl mb-10 line-clamp-3 md:line-clamp-none max-w-2xl drop-shadow-lg">{movie.synopsis}</p>
+                    <div className="flex flex-wrap gap-4">
+                        <button onClick={() => onViewDetails(movie.id)} className="btn-netflix bg-white text-black font-black px-10 py-4 rounded-md flex items-center gap-2 text-lg shadow-xl shadow-white/5"><i className="fa-solid fa-info-circle"></i> View Info</button>
+                        <button className="btn-netflix bg-[#E50914] text-white font-black px-10 py-4 rounded-md flex items-center gap-2 text-lg shadow-xl shadow-red-900/20"><i className="fa-solid fa-download"></i> Download</button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const MovieCard = ({ movie, onClick }) => (
+            <div onClick={onClick} className="group relative aspect-[2/3] bg-[#111] rounded-md overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:z-20 border border-white/5 shadow-lg">
+                <img src={movie.posterUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                <div className="absolute top-2 left-2 flex flex-col gap-1">
+                    <span className="bg-[#E50914] text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase shadow-lg">{movie.quality}</span>
+                </div>
+                <div className="absolute inset-0 movie-card-overlay opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4">
+                    <h3 className="text-white font-black text-sm leading-tight mb-1 group-hover:translate-y-0 translate-y-2 transition-transform">{movie.title}</h3>
+                    <div className="flex justify-between text-[10px] text-gray-400 font-bold">
+                        <span>{movie.year}</span>
+                        <span className="text-[#E50914] font-black">★ {movie.rating}</span>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const MovieDetails = ({ movie, onBack }) => (
+            <div className="min-h-screen bg-black animate-fadeIn pb-32">
+                <div className="relative h-[50vh] overflow-hidden">
+                    <div className="absolute inset-0 bg-cover bg-center opacity-40 blur-sm scale-105" style={{ backgroundImage: `url(${movie.backdropUrl})` }}></div>
+                    <button onClick={onBack} className="absolute top-8 left-8 z-30 bg-black/50 text-white p-4 rounded-full hover:bg-[#E50914] transition-all hover:scale-110"><i className="fa-solid fa-arrow-left text-xl"></i></button>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
+                </div>
+                <div className="max-w-7xl mx-auto px-4 -mt-40 relative z-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                        <div className="flex flex-col gap-8">
+                            <img src={movie.posterUrl} className="w-full rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-white/10" />
+                            <AdSlot label="Sidebar High CTR 300x600" className="h-[400px]" />
+                        </div>
+                        <div className="lg:col-span-2">
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {movie.genre.map(g => <span key={g} className="bg-white/10 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">{g}</span>)}
+                            </div>
+                            <h1 className="text-5xl md:text-8xl font-black text-white mb-6 tracking-tighter">{movie.title}</h1>
+                            <div className="flex flex-wrap items-center gap-8 text-gray-400 mb-10 font-bold uppercase tracking-widest text-xs">
+                                <span className="text-[#E50914] font-black text-base flex items-center gap-1"><i className="fa-solid fa-star"></i> {movie.rating}</span>
+                                <span>Released: {movie.year}</span>
+                                <span className="border border-white/20 px-2 py-0.5 rounded">{movie.quality}</span>
+                                <span className="text-white">{movie.size}</span>
+                            </div>
+                            <div className="bg-[#121212] p-10 rounded-2xl border border-white/5 mb-10 shadow-2xl">
+                                <h2 className="text-2xl font-black mb-6 text-[#E50914] uppercase tracking-tighter">Storyline</h2>
+                                <p className="text-gray-300 text-xl leading-relaxed font-medium">{movie.synopsis}</p>
+                            </div>
+                            <div className="bg-[#1a1a1a] p-10 rounded-2xl border-2 border-dashed border-[#E50914]/40 flex flex-col items-center">
+                                <h3 className="text-white font-black text-2xl mb-8 uppercase tracking-widest">Download Section</h3>
+                                <AdSlot label="Above Download Leaderboard" className="w-full mb-8" />
+                                <a 
+                                    href={movie.downloadUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="w-full max-w-lg bg-[#E50914] hover:bg-white hover:text-black text-white font-black py-6 rounded-xl text-2xl uppercase tracking-widest text-center transition-all hover:scale-[1.03] shadow-2xl shadow-red-900/40"
+                                >
+                                    <i className="fa-solid fa-cloud-arrow-down mr-3"></i> Download Now
+                                </a>
+                                <p className="mt-4 text-gray-500 text-sm font-bold animate-pulse uppercase">Link Verified • Fast Speed</p>
+                                <AdSlot label="Below Download Native Ad" className="w-full mt-8" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const UploadForm = ({ onUpload, onCancel }) => {
+            const [f, setF] = useState({ title: '', year: 2025, quality: '4K Ultra HD', size: '', genres: '', rating: 8.5, synopsis: '', posterUrl: '', backdropUrl: '' });
+            const inp = "w-full bg-[#111] border border-white/10 rounded-lg p-4 outline-none focus:border-[#E50914] focus:ring-1 focus:ring-[#E50914] text-white font-medium transition-all";
+            const lbl = "text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 block";
+            return (
+                <div className="max-w-4xl mx-auto px-4 py-20 animate-fadeIn">
+                    <div className="bg-[#121212] p-12 rounded-3xl border border-white/5 shadow-2xl">
+                        <div className="flex justify-between items-center mb-10">
+                            <h2 className="text-4xl font-black uppercase tracking-tighter">Admin <span className="text-[#E50914]">Upload</span></h2>
+                            <button onClick={onCancel} className="text-gray-500 hover:text-white transition-colors text-2xl"><i className="fa-solid fa-times"></i></button>
+                        </div>
+                        <form onSubmit={e => { e.preventDefault(); onUpload({ id: Date.now().toString(), ...f, genre: f.genres.split(',').map(g => g.trim()), downloadUrl: '#', latest: true }); }} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="md:col-span-2">
+                                <label className={lbl}>Movie Title</label>
+                                <input placeholder="e.g. Inception" required className={inp} onChange={e => setF({...f, title: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className={lbl}>Year</label>
+                                <input placeholder="2025" type="number" className={inp} onChange={e => setF({...f, year: +e.target.value})} />
+                            </div>
+                            <div>
+                                <label className={lbl}>Quality</label>
+                                <input placeholder="4K UHD / 1080p" className={inp} onChange={e => setF({...f, quality: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className={lbl}>Genres (Comma Separated)</label>
+                                <input placeholder="Action, Sci-Fi" className={inp} onChange={e => setF({...f, genres: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className={lbl}>File Size</label>
+                                <input placeholder="1.8 GB" className={inp} onChange={e => setF({...f, size: e.target.value})} />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className={lbl}>Poster Image URL</label>
+                                <input placeholder="https://..." className={inp} onChange={e => setF({...f, posterUrl: e.target.value})} />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className={lbl}>Backdrop Image URL</label>
+                                <input placeholder="https://..." className={inp} onChange={e => setF({...f, backdropUrl: e.target.value})} />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className={lbl}>Synopsis</label>
+                                <textarea placeholder="Enter movie description..." className={`${inp} h-40 resize-none`} onChange={e => setF({...f, synopsis: e.target.value})} />
+                            </div>
+                            <button type="submit" className="bg-[#E50914] text-white font-black py-5 rounded-xl uppercase tracking-widest md:col-span-2 hover:bg-white hover:text-black transition-all shadow-xl shadow-red-900/20 text-lg">Deploy to Portal</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState({ type: 'home' });
+            const [search, setSearch] = useState('');
+            const [movies, setMovies] = useState([]);
+
+            useEffect(() => {
+                const s = localStorage.getItem('cine_store_v2');
+                setMovies(s ? JSON.parse(s) : INITIAL_MOVIES);
+            }, []);
+
+            useEffect(() => { if (movies.length > 0) localStorage.setItem('cine_store_v2', JSON.stringify(movies)); }, [movies]);
+
+            const filtered = movies.filter(m => m.title.toLowerCase().includes(search.toLowerCase()));
+            const featured = movies[0];
+
+            return (
+                <div className="min-h-screen flex flex-col selection:bg-[#E50914] selection:text-white">
+                    <Navbar onSearch={setSearch} onGoHome={() => setView({type:'home'})} onGoUpload={() => setView({type:'upload'})} />
+                    
+                    <main className="flex-grow bg-black">
+                        {view.type === 'home' ? (
+                            <>
+                                <div className="max-w-7xl mx-auto py-6 px-4"><AdSlot label="Premium Leaderboard Ad" /></div>
+                                {!search && featured && <Hero movie={featured} onViewDetails={id => setView({type:'details', selectedId: id})} />}
+                                <section className="max-w-7xl mx-auto px-4 py-20">
+                                    <div className="flex items-center justify-between mb-12 border-b border-white/10 pb-6">
+                                        <h2 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3">
+                                            <span className="w-2 h-10 bg-[#E50914] rounded-full"></span>
+                                            {search ? `Search: ${search}` : 'New Arrivals'}
+                                        </h2>
+                                        <div className="hidden md:flex gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                            <span className="text-[#E50914]">Trending</span>
+                                            <span className="hover:text-white cursor-pointer transition-colors">Most Popular</span>
+                                            <span className="hover:text-white cursor-pointer transition-colors">4K Releases</span>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8">
+                                        {filtered.map(m => <MovieCard key={m.id} movie={m} onClick={() => setView({type:'details', selectedId: m.id})} />)}
+                                    </div>
+                                    {filtered.length === 0 && (
+                                        <div className="text-center py-40 bg-[#0a0a0a] rounded-3xl border border-white/5">
+                                            <i className="fa-solid fa-search text-6xl text-gray-800 mb-6"></i>
+                                            <p className="text-gray-500 font-bold uppercase tracking-widest">No titles found matching your search.</p>
+                                        </div>
+                                    )}
+                                </section>
+                                <div className="max-w-7xl mx-auto py-12 px-4"><AdSlot label="Footer Responsive Banner" /></div>
+                            </>
+                        ) : view.type === 'upload' ? (
+                            <UploadForm onUpload={m => { setMovies([m, ...movies]); setView({type:'home'}); window.scrollTo(0,0); }} onCancel={() => setView({type:'home'})} />
+                        ) : (
+                            movies.find(m => m.id === view.selectedId) && <MovieDetails movie={movies.find(m => m.id === view.selectedId)} onBack={() => setView({type:'home'})} />
+                        )}
+                    </main>
+
+                    <footer className="bg-[#050505] border-t border-white/5 py-20 px-4">
+                        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+                            <div className="md:col-span-2">
+                                <div className="text-[#E50914] text-3xl font-black tracking-tighter mb-6 uppercase">CINEFLOW</div>
+                                <p className="text-gray-500 text-lg leading-relaxed max-w-md">Your premium destination for high-speed direct movie downloads. No registration, no nonsense. Just pure entertainment in stunning 4K.</p>
+                            </div>
+                            <div>
+                                <h4 className="text-white font-black uppercase text-xs tracking-widest mb-6">Explore</h4>
+                                <ul className="text-gray-500 text-sm font-bold flex flex-col gap-4">
+                                    <li><button onClick={() => setView({type:'home'})} className="hover:text-[#E50914] transition-colors">BROWSE LATEST</button></li>
+                                    <li><button onClick={() => setView({type:'upload'})} className="hover:text-[#E50914] transition-colors">UPLOAD PORTAL</button></li>
+                                    <li><a href="#" className="hover:text-[#E50914] transition-colors">TRENDING NOW</a></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="text-white font-black uppercase text-xs tracking-widest mb-6">Compliance</h4>
+                                <ul className="text-gray-500 text-sm font-bold flex flex-col gap-4">
+                                    <li><a href="#" className="hover:text-[#E50914] transition-colors">DMCA POLICY</a></li>
+                                    <li><a href="#" className="hover:text-[#E50914] transition-colors">TERMS OF USE</a></li>
+                                    <li><a href="#" className="hover:text-[#E50914] transition-colors">PRIVACY POLICY</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div className="text-center pt-10 border-t border-white/5">
+                            <p className="text-gray-700 text-[10px] font-black uppercase tracking-[0.2em]">&copy; 2025 CINEFLOW PORTAL • ALL RIGHTS RESERVED • BUILT FOR MOVIE LOVERS</p>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+    
+    <style>
+        @keyframes loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(300%); }
+        }
+    </style>
+</body>
+</html>
